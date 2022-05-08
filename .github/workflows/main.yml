@@ -1,0 +1,74 @@
+name: macOS cross compiler
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches:
+      - $default-branch
+      - dev/*
+
+  pull_request:
+    branches:
+      - $default-branch
+
+env:
+  MACOS_SDK_VERSION: 12.3
+  CI_REGISTRY: docker.io
+  CI_REGISTRY_USER: ${{ secrets.CI_REGISTRY_USER }}
+  CI_REGISTRY_PASSWORD: ${{ secrets.CI_REGISTRY_PASSWORD }}
+
+jobs:
+  build-cross-compiler:
+    name: Build Cross Compiler
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Prepare for build
+        run: |
+          GITHUB_REPOSITORY=${{ github.repository }}
+          echo "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" >>"$GITHUB_ENV"
+          # shellcheck disable=SC2129
+          echo "OUT_TARBALL_PATH=$PWD/${GITHUB_REPOSITORY##*/}.tar.xz" >>"$GITHUB_ENV"
+        shell: bash
+
+      - name: Building ...
+        run: |
+          cat <<'EOF' >"$PWD/action-ci-build.sh"
+          MACOS_CROSS_COMPILER="/workspace/${GITHUB_REPOSITORY##*/}"
+          cd "$MACOS_CROSS_COMPILER" || exit
+          # picked this version as they work well with godot-rust, feel free to change
+          # git checkout 7c090bd8cd4ad28cf332f1d02267630d8f333c19
+
+          (cd tarballs && curl -L -O https://gitlab.com/LiangchengJ/fserv/-/raw/main/txz/MacOSX$MACOS_SDK_VERSION.sdk.tar.xz)
+          UNATTENDED=yes OSX_VERSION_MIN=10.10 CLANG_VERSION=13.0.1 ./build.sh
+
+          cd "$MACOS_CROSS_COMPILER" || exit
+          mv target "${GITHUB_REPOSITORY##*/}"
+          tar -cJf "${GITHUB_REPOSITORY##*/}.tar.xz" "${GITHUB_REPOSITORY##*/}"
+          EOF
+
+          exec docker run -v "$PWD:/workspace/${GITHUB_REPOSITORY##*/}" \
+              -e GITHUB_REPOSITORY="$GITHUB_REPOSITORY" \
+              -e MACOS_SDK_VERSION=$MACOS_SDK_VERSION \
+              --entrypoint=bash "liangchengj/macos-cross-compiler-builder" -ex "/workspace/${GITHUB_REPOSITORY##*/}/action-ci-build.sh"
+        shell: bash
+
+      - name: Publish compiler artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: macOS Cross Compiler
+          path: ${{ env.OUT_TARBALL_PATH }}
+
+      - name: Publish rustaceans docker image
+        run: |
+          git clone --depth 1 -b main https://gitlab.com/LiangchengJ/podock.git
+          cd podock/rustaceans || exit
+          mv $OUT_TARBALL_PATH .
+          docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
+          docker build -t rustaceans:jit .
+          docker tag rustaceans:jit "$CI_REGISTRY_USER/rustaceans:jit"
+          docker push "$CI_REGISTRY_USER/rustaceans:jit"
+        shell: bash
