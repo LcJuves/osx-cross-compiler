@@ -71,4 +71,7 @@ jobs:
           docker build -t rustaceans:jit .
           docker tag rustaceans:jit "$CI_REGISTRY_USER/rustaceans:jit"
           docker push "$CI_REGISTRY_USER/rustaceans:jit"
+          docker build -t rustaceans -f rustaceans-latest.Dockerfile .
+          docker tag rustaceans "$CI_REGISTRY_USER/rustaceans"
+          docker push "$CI_REGISTRY_USER/rustaceans"
         shell: bash
