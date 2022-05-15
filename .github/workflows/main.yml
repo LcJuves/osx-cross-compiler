@@ -63,6 +63,7 @@ jobs:
           path: ${{ env.OUT_TARBALL_PATH }}
 
       - name: Publish rustaceans docker image
+        if: ${{ github.repository == 'LiangchengJ/macos-cross-compiler' }}
         run: |
           git clone --depth 1 -b main https://gitlab.com/LiangchengJ/podock.git
           cd podock/rustaceans || exit
