@@ -1,4 +1,5 @@
 ## macOS Cross toolchain for Linux and *BSD
+[![macOS cross compiler](https://github.com/LiangchengJ/macos-cross-compiler/actions/workflows/main.yml/badge.svg)](https://github.com/LiangchengJ/macos-cross-compiler/actions/workflows/main.yml)
 
 ### WHAT IS THE GOAL OF OSXCROSS?
 
