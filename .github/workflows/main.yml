@@ -57,10 +57,13 @@ jobs:
         shell: bash
 
       - name: Publish compiler artifact
-        uses: actions/upload-artifact@v3
+        uses: softprops/action-gh-release@v1
         with:
           name: macOS Cross Compiler
-          path: ${{ env.OUT_TARBALL_PATH }}
+          tag_name: mac-os-cross-compiler
+          prerelease: false
+          files: |
+            ${{ env.OUT_TARBALL_PATH }}
 
       - name: Publish rustaceans docker image
         if: ${{ github.repository == 'LiangchengJ/macos-cross-compiler' }}
