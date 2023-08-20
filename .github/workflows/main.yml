@@ -43,7 +43,7 @@ jobs:
           # git checkout 7c090bd8cd4ad28cf332f1d02267630d8f333c19
 
           (cd tarballs && curl -L -O https://gitlab.com/website107/fserv/-/raw/main/txz/MacOSX$MACOS_SDK_VERSION.sdk.tar.xz)
-          UNATTENDED=yes OSX_VERSION_MIN=10.10 CLANG_VERSION=13.0.1 ./build.sh
+          UNATTENDED=yes OSX_VERSION_MIN=10.10 CLANG_VERSION=17.0.0 ./build.sh
 
           cd "$MACOS_CROSS_COMPILER" || exit
           mv target "${GITHUB_REPOSITORY##*/}"
