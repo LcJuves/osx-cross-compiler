@@ -9,9 +9,10 @@ The goal of OSXCross is to provide a well working macOS cross toolchain for\
 OSXCross works **on** `x86`, `x86_64`, `arm` and `AArch64`/`arm64`,\
 and is able to **target** `arm64`, `arm64e`, `x86_64`, `x86_64h` and `i386`.
 
-`arm64` requires macOS 11.0 SDK (or later).\
-`arm64e`
-[requires a recent Apple clang compiler.](https://github.com/apple/llvm-project)
+`arm64` requires macOS 11.0 SDK (or later).  
+`arm64e` [requires a recent Apple clang compiler.](https://github.com/apple/llvm-project)
+
+[There is also a `ppc` test branch that has recently seen some daylight.](https://github.com/tpoechtrager/osxcross/blob/ppc-test/README.PPC-GCC-5.5.0-SDK-10.5.md)
 
 ### HOW DOES IT WORK?
 
@@ -57,8 +58,9 @@ the tarballs/ directory.
 
 Then ensure you have the following installed on your system:
 
-`Clang 3.9+`, `cmake`, `git`, `patch`, `Python`, `libssl-devel` (openssl)\
-`lzma-devel`, `libxml2-devel` and the `bash shell`.
+`Clang 3.9+`, `cmake`, `git`, `patch`, `Python`, `libssl-dev` (openssl)
+`lzma-dev`, `libxml2-dev`, `xz`, `bzip2`, `cpio`, `libbz2`, `zlib1g-dev`
+and the `bash shell`.
 
 You can run 'sudo tools/get\_dependencies.sh' to get these (and the optional
 packages) automatically. (outdated)
@@ -89,7 +91,8 @@ To build and install your own `clang` from a recent source tree, using `gcc`,
 run:
 
 ```shell
-./build_clang.sh
+    ./build_clang.sh # Builds a mainline version of Clang
+    ./build_apple_clang.sh # Builds Apple's version of Clang
 ```
 
 This installs `clang` into `/usr/local`. If you want to install somewhere else,
@@ -178,7 +181,7 @@ terms before continuing.](https://www.apple.com/legal/sla/docs/xcode.pdf)**
 The SDKs can be extracted either from full Xcode or from Command Line Tools for
 Xcode.
 
-##### Packaging the SDK on macOS (Xcode):
+##### Packaging the SDK on recent macOS (Xcode): #####
 
 1. [Download Xcode: https://developer.apple.com/download/all/?q=xcode] \*\*
 2. [Mount Xcode.dmg (Open With -> DiskImageMounter) \*\*\*]
@@ -186,8 +189,8 @@ Xcode.
 4. Copy the packaged SDK (\*.tar.\* or \*.pkg) on a USB Stick
 5. (On Linux/BSD) Copy or move the SDK into the tarballs/ directory of OSXCross.
 
-\*\*\
--- Xcode up to 12.5 Beta 3 is known to work.\
+\*\*  
+-- Xcode up to 15 Beta 6 is known to work.  
 -- Use Firefox if you have problems signing in.
 
 \*\*\*\
@@ -196,7 +199,16 @@ Xcode.
 
 Step 1. and 2. can be skipped if you have Xcode installed.
 
-##### Packing the SDK on Linux - Method 1 (Xcode > 8.0):
+##### Packaging the Xcode 4.2 SDK on Snow Leopard: #####
+1. Install a recent version of Bash from MacPorts or Tigerbrew
+2. Download Xcode 4.2 for Snow Leopard
+3. Mount the disk image with DiskImageMounter or by running
+  `hdiutil attach <xcode>.dmg`
+4. Run: `XCODEDIR=/Volumes/Xcode ./tools/gen_sdk_package.sh`
+5. (On Linux/BSD) Copy or move the SDK into the tarballs/ directory of
+   OSXCross.
+
+##### Packing the SDK on Linux - Method 1 (Xcode > 8.0): #####
 
 This method may require up to 45 GB of free disk space.\
 An SSD is recommended for this method.
