@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 ##
-## A minimalistic MacPorts Packet Manager for OSXCross,
+## A minimalistic MacPorts Package Manager for OSXCross,
 ## based on: https://github.com/maci0/pmmacports.
 ## Please see README.MACPORTS for more.
 ## License: GPLv2.
@@ -84,6 +84,8 @@ case $MACOSX_DEPLOYMENT_TARGET in
   11.*   ) OSXVERSION="darwin_20" ;;
   12.*   ) OSXVERSION="darwin_21" ;;
   13.*   ) OSXVERSION="darwin_22" ;;
+  14.*   ) OSXVERSION="darwin_23" ;;
+  15.*   ) OSXVERSION="darwin_24" ;;
        * ) unsupportedDepTarget ;;
 esac
 
@@ -320,6 +322,12 @@ getPkgUrl()
   fi
   if [ -z "$pkg" ]; then
     pkg=$(echo "$pkgs" | grep $OSXVERSION | grep "noarch" | uniq | tail -n1)
+  fi
+  if [ -z "$pkg" ]; then
+    pkg=$(echo "$pkgs" | grep "any" | grep $ARCH | uniq | tail -n1)
+  fi
+  if [ -z "$pkg" ]; then
+    pkg=$(echo "$pkgs" | grep "any" | grep "noarch" | uniq | tail -n1)
   fi
 
   verboseMsg " selected: $pkg"

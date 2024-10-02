@@ -45,9 +45,9 @@ Note: The "compiler-rt" library can be needed to link code that uses the
 Basically everything you can build on macOS with clang/gcc should build with
 this cross toolchain as well.
 
-### PACKET MANAGERS ###
+### PACKAGE MANAGERS ###
 
-OSXCross comes with a minimalistic MacPorts Packet Manager.
+OSXCross comes with a minimalistic MacPorts Package Manager.
 See [README.MACPORTS](README.MACPORTS.md) for more.
 
 ### INSTALLATION: ###
@@ -191,7 +191,7 @@ Tools for Xcode.
    OSXCross.
 
 \*\*  
--- Xcode up to 15 Beta 6 is known to work.  
+-- Xcode up to 16.1 Beta 1 is known to work.  
 -- Use Firefox if you have problems signing in.
 
 \*\*\*  
