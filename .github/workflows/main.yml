@@ -13,7 +13,7 @@ on:
       - $default-branch
 
 env:
-  MACOS_SDK_VERSION: 12.3
+  MACOS_SDK_VERSION: 15.2
   CI_REGISTRY: docker.io
   CI_REGISTRY_USER: ${{ secrets.CI_REGISTRY_USER }}
   CI_REGISTRY_PASSWORD: ${{ secrets.CI_REGISTRY_PASSWORD }}
@@ -42,7 +42,7 @@ jobs:
           # picked this version as they work well with godot-rust, feel free to change
           # git checkout 7c090bd8cd4ad28cf332f1d02267630d8f333c19
 
-          (cd tarballs && curl -L -O https://gitlab.com/website107/fserv/-/raw/main/txz/MacOSX$MACOS_SDK_VERSION.sdk.tar.xz)
+          (cd tarballs && curl -L -O https://gitlab.com/website107/file-server-2/-/raw/main/txz/MacOSX$MACOS_SDK_VERSION.sdk.tar.xz)
           UNATTENDED=yes OSX_VERSION_MIN=10.10 CLANG_VERSION=17.0.0 ./build.sh
 
           cd "$MACOS_CROSS_COMPILER" || exit
