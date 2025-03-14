@@ -68,7 +68,7 @@ jobs:
       - name: Publish rustaceans docker image
         if: ${{ github.repository == 'LcJuves/macos-cross-compiler' }}
         run: |
-          git clone --depth 1 -b main https://gitlab.com/LcJuves/podock.git
+          git clone --depth 1 -b main https://github.com/LcJuves/podock.git
           cd podock/rustaceans || exit
           mv $OUT_TARBALL_PATH .
           docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
