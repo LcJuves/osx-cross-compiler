@@ -37,14 +37,14 @@ jobs:
       - name: Building ...
         run: |
           cat <<'EOF' >"$PWD/action-ci-build.sh"
-          MACOS_CROSS_COMPILER="/workspace/${GITHUB_REPOSITORY##*/}"
-          cd "$MACOS_CROSS_COMPILER" || exit
+          OSX_CROSS_COMPILER="/workspace/${GITHUB_REPOSITORY##*/}"
+          cd "$OSX_CROSS_COMPILER" || exit
           # picked this version as they work well with godot-rust, feel free to change
           # git checkout 7c090bd8cd4ad28cf332f1d02267630d8f333c19
 
           UNATTENDED=yes OSX_VERSION_MIN=10.10 CLANG_VERSION=19.0.0 ./build.sh
 
-          cd "$MACOS_CROSS_COMPILER" || exit
+          cd "$OSX_CROSS_COMPILER" || exit
           mv target "${GITHUB_REPOSITORY##*/}"
           tar -cJf "${GITHUB_REPOSITORY##*/}.tar.xz" "${GITHUB_REPOSITORY##*/}"
           EOF
