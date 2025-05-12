@@ -52,7 +52,7 @@ jobs:
           exec docker run -v "$PWD:/workspace/${GITHUB_REPOSITORY##*/}" \
               -e GITHUB_REPOSITORY="$GITHUB_REPOSITORY" \
               -e MACOS_SDK_VERSION=$MACOS_SDK_VERSION \
-              --entrypoint=bash "lcjuves/macos-cross-compiler-builder" -ex "/workspace/${GITHUB_REPOSITORY##*/}/action-ci-build.sh"
+              --entrypoint=bash "ghcr.io/lcjuves/macos-cross-compiler-builder" -ex "/workspace/${GITHUB_REPOSITORY##*/}/action-ci-build.sh"
         shell: bash
 
       - name: Publish compiler artifact
