@@ -42,7 +42,7 @@ jobs:
           # picked this version as they work well with godot-rust, feel free to change
           # git checkout 7c090bd8cd4ad28cf332f1d02267630d8f333c19
 
-          UNATTENDED=yes OSX_VERSION_MIN=10.10 CLANG_VERSION=17.0.0 ./build.sh
+          UNATTENDED=yes OSX_VERSION_MIN=10.10 CLANG_VERSION=19.0.0 ./build.sh
 
           cd "$MACOS_CROSS_COMPILER" || exit
           mv target "${GITHUB_REPOSITORY##*/}"
@@ -52,7 +52,7 @@ jobs:
           exec docker run -v "$PWD:/workspace/${GITHUB_REPOSITORY##*/}" \
               -e GITHUB_REPOSITORY="$GITHUB_REPOSITORY" \
               -e MACOS_SDK_VERSION=$MACOS_SDK_VERSION \
-              --entrypoint=bash "ghcr.io/lcjuves/macos-cross-compiler-builder" -ex "/workspace/${GITHUB_REPOSITORY##*/}/action-ci-build.sh"
+              --entrypoint=bash "ghcr.io/lcjuves/osx-cross-compiler-builder" -ex "/workspace/${GITHUB_REPOSITORY##*/}/action-ci-build.sh"
         shell: bash
 
       - name: Publish compiler artifact
@@ -65,7 +65,7 @@ jobs:
             ${{ env.OUT_TARBALL_PATH }}
 
       - name: Publish rustaceans docker image
-        if: ${{ github.repository == 'LcJuves/macos-cross-compiler' }}
+        if: ${{ github.repository == 'LcJuves/osx-cross-compiler' }}
         run: |
           git clone --depth 1 -b main https://github.com/LcJuves/podock.git
           cd podock/rustaceans || exit
