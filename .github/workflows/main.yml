@@ -75,6 +75,7 @@ jobs:
           docker tag "$CI_REGISTRY_USER/amuse-lang-environment:llvmenv-jit" amuse-lang-environment:llvmenv-jit
           docker build -t "$CI_REGISTRY_USER/rustaceans:jit" -f jit.Dockerfile .
           docker push "$CI_REGISTRY_USER/rustaceans:jit"
+          docker tag "$CI_REGISTRY_USER/rustaceans:jit" rustaceans:jit
           docker build -t "$CI_REGISTRY_USER/rustaceans" .
           docker push "$CI_REGISTRY_USER/rustaceans"
         shell: bash
