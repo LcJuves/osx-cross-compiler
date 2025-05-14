@@ -86,8 +86,8 @@ jobs:
           docker build -t "$CI_REGISTRY_USER/rustaceans" .
           docker push "$CI_REGISTRY_USER/rustaceans"
           docker login -u "$CI_REGISTRY_GHCR_USER" -p "$CR_PAT" "$CI_REGISTRY_GHCR"
-          docker tag "$CI_REGISTRY_USER/rustaceans:jit" "$CI_REGISTRY_GHCR/$CI_REGISTRY_GHCR_USER/rustaceans:jit"
-          docker push "$CI_REGISTRY_GHCR/$CI_REGISTRY_GHCR_USER/rustaceans:jit"
-          docker tag "$CI_REGISTRY_USER/rustaceans" "$CI_REGISTRY_GHCR/$CI_REGISTRY_GHCR_USER/rustaceans"
-          docker push "$CI_REGISTRY_GHCR/$CI_REGISTRY_GHCR_USER/rustaceans"
+          docker tag "$CI_REGISTRY_USER/rustaceans:jit" "$CI_REGISTRY_GHCR/$CI_REGISTRY_USER/rustaceans:jit"
+          docker push "$CI_REGISTRY_GHCR/$CI_REGISTRY_USER/rustaceans:jit"
+          docker tag "$CI_REGISTRY_USER/rustaceans" "$CI_REGISTRY_GHCR/$CI_REGISTRY_USER/rustaceans"
+          docker push "$CI_REGISTRY_GHCR/$CI_REGISTRY_USER/rustaceans"
         shell: bash
