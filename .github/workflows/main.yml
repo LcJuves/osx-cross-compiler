@@ -17,11 +17,18 @@ env:
   CI_REGISTRY: docker.io
   CI_REGISTRY_USER: ${{ secrets.CI_REGISTRY_USER }}
   CI_REGISTRY_PASSWORD: ${{ secrets.CI_REGISTRY_PASSWORD }}
+  CI_REGISTRY_GHCR_USER: ${{ secrets.CI_REGISTRY_GHCR_USER }}
+  CR_PAT: ${{ secrets.CR_PAT }}
+  CI_REGISTRY_GHCR: ${{ secrets.CI_REGISTRY_GHCR }}
 
 jobs:
   build-cross-compiler:
     name: Build Cross Compiler
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/lcjuves/container-image-builder:latest
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
 
     steps:
       - uses: actions/checkout@v3
@@ -78,4 +85,9 @@ jobs:
           docker tag "$CI_REGISTRY_USER/rustaceans:jit" rustaceans:jit
           docker build -t "$CI_REGISTRY_USER/rustaceans" .
           docker push "$CI_REGISTRY_USER/rustaceans"
+          docker login -u "$CI_REGISTRY_GHCR_USER" -p "$CR_PAT" "$CI_REGISTRY_GHCR"
+          docker tag "$CI_REGISTRY_USER/rustaceans:jit" "$CI_REGISTRY_GHCR/$CI_REGISTRY_GHCR_USER/rustaceans:jit"
+          docker push "$CI_REGISTRY_GHCR/$CI_REGISTRY_GHCR_USER/rustaceans:jit"
+          docker tag "$CI_REGISTRY_USER/rustaceans" "$CI_REGISTRY_GHCR/$CI_REGISTRY_GHCR_USER/rustaceans"
+          docker push "$CI_REGISTRY_GHCR/$CI_REGISTRY_GHCR_USER/rustaceans"
         shell: bash
