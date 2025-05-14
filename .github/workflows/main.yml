@@ -21,6 +21,10 @@ env:
   CR_PAT: ${{ secrets.CR_PAT }}
   CI_REGISTRY_GHCR: ${{ secrets.CI_REGISTRY_GHCR }}
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build-cross-compiler:
     name: Build Cross Compiler
@@ -37,7 +41,6 @@ jobs:
           echo "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" >>"$GITHUB_ENV"
           # shellcheck disable=SC2129
           echo "OUT_TARBALL_PATH=$PWD/${GITHUB_REPOSITORY##*/}.tar.xz" >>"$GITHUB_ENV"
-        shell: bash
 
       - name: Building ...
         run: |
@@ -47,7 +50,6 @@ jobs:
           UNATTENDED=yes OSX_VERSION_MIN=10.10 CLANG_VERSION=19.0.0 ./build.sh
           mv target "${GITHUB_REPOSITORY##*/}"
           tar -cJf "${GITHUB_REPOSITORY##*/}.tar.xz" "${GITHUB_REPOSITORY##*/}"
-        shell: bash
 
       - name: Publish compiler artifact
         uses: softprops/action-gh-release@v1
@@ -77,4 +79,3 @@ jobs:
           docker push "$CI_REGISTRY_GHCR/$CI_REGISTRY_USER/rustaceans:jit"
           docker tag "$CI_REGISTRY_USER/rustaceans" "$CI_REGISTRY_GHCR/$CI_REGISTRY_USER/rustaceans"
           docker push "$CI_REGISTRY_GHCR/$CI_REGISTRY_USER/rustaceans"
-        shell: bash
