@@ -28,11 +28,7 @@ defaults:
 jobs:
   build-cross-compiler:
     name: Build Cross Compiler
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/lcjuves/container-image-builder:latest
-      volumes:
-        - /var/run/docker.sock:/var/run/docker.sock
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v3
