@@ -19,7 +19,7 @@ mkdir -p $BUILD_DIR
 source $BASE_DIR/tools/trap_exit.sh
 
 if [ -z "$CLANG_VERSION" ]; then
-  CLANG_VERSION=20.1.1
+  CLANG_VERSION=20.1.8
 fi
 
 if [ -z "$INSTALLPREFIX" ]; then
@@ -150,6 +150,16 @@ if [ $GITPROJECT == "apple" ]; then
   # https://github.com/swiftlang/llvm-project/pull/8119
   patch -p1 < $PATCH_DIR/unbreak-apple-lld.patch || true
   popd &>/dev/null
+fi
+
+if ([[ $CLANG_VERSION == 18* ]] || [[ $CLANG_VERSION == 17* ]] ||
+    [[ $CLANG_VERSION == 16* ]] || [[ $CLANG_VERSION == 15* ]] ||
+    [[ $CLANG_VERSION == 14* ]] || [[ $CLANG_VERSION == 13* ]] ||
+    [[ $CLANG_VERSION == 12* ]] || [[ $CLANG_VERSION == 11* ]]); then
+  $SED -i 's/#include <cstddef>/#include <cstddef>\
+\ #include <cstdint>/' *llvm*/llvm/include/llvm/ADT/SmallVector.h
+  $SED -i 's/#include <string>/#include <string>\
+\ #include <cstdint>/' *llvm*/llvm/lib/Target/X86/MCTargetDesc/X86MCTargetDesc.h
 fi
 
 if ([[ $CLANG_VERSION == 15* ]] || [[ $CLANG_VERSION == 14* ]] ||

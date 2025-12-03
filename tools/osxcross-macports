@@ -19,7 +19,6 @@ PUBKEYRMD160="d3a22f5be7184d6575afcc1be6fdb82fd25562e8"
 PUBKEYSHA1="214baa965af76ff71187e6c1ac91c559547f48ab"
 
 PLATFORM=$(uname -s)
-ARCH="x86_64"
 
 if [ -z "$BASHPID" ]; then
   BASHPID=$(sh -c 'echo $PPID')
@@ -67,26 +66,54 @@ unsupportedDepTarget()
   exit 1
 }
 
+if uname | grep -qi bsd; then
+  SORT="gsort"
+else
+  SORT="sort"
+fi
+
+require $SORT
 require "openssl"
+require "bzip2"
+require "tar"
+
+# Prefer bsdtar (handles SCHILY.* pax headers quietly); fall back to GNU tar with warning suppression.
+TAR_CMD=(tar)
+if command -v bsdtar &>/dev/null; then
+  TAR_CMD=(bsdtar)
+elif tar --version 2>/dev/null | grep -q "GNU tar"; then
+  TAR_CMD=(tar --warning=no-unknown-keyword)
+fi
+
+# Set ARCH based on MACOSX_DEPLOYMENT_TARGET
+major="${MACOSX_DEPLOYMENT_TARGET%%.*}"
+minor="${MACOSX_DEPLOYMENT_TARGET#*.}"
+
+if [ "$major" -lt 10 ] || { [ "$major" -eq 10 ] && [ "$minor" -le 16 ]; }; then
+  ARCH="x86_64"
+else
+  ARCH="arm64"
+fi
 
 case $MACOSX_DEPLOYMENT_TARGET in
-  10.6*  ) OSXVERSION="darwin_10" ;;
-  10.7*  ) OSXVERSION="darwin_11" ;;
-  10.8*  ) OSXVERSION="darwin_12" ;;
-  10.9*  ) OSXVERSION="darwin_13" ;;
-  10.10* ) OSXVERSION="darwin_14" ;;
-  10.11* ) OSXVERSION="darwin_15" ;;
-  10.12* ) OSXVERSION="darwin_16" ;;
-  10.13* ) OSXVERSION="darwin_17" ;;
-  10.14* ) OSXVERSION="darwin_18" ;;
-  10.15* ) OSXVERSION="darwin_19" ;;
-  10.16* ) OSXVERSION="darwin_20" ;;
-  11.*   ) OSXVERSION="darwin_20" ;;
-  12.*   ) OSXVERSION="darwin_21" ;;
-  13.*   ) OSXVERSION="darwin_22" ;;
-  14.*   ) OSXVERSION="darwin_23" ;;
-  15.*   ) OSXVERSION="darwin_24" ;;
-       * ) unsupportedDepTarget ;;
+  10.6*  ) OSXVERSION="darwin_10"; UNIVERSAL_ARCHS="i386-x86_64" ;;
+  10.7*  ) OSXVERSION="darwin_11"; UNIVERSAL_ARCHS="i386-x86_64"  ;;
+  10.8*  ) OSXVERSION="darwin_12"; UNIVERSAL_ARCHS="x86_64" ;;
+  10.9*  ) OSXVERSION="darwin_13"; UNIVERSAL_ARCHS="x86_64" ;;
+  10.10* ) OSXVERSION="darwin_14"; UNIVERSAL_ARCHS="x86_64" ;;
+  10.11* ) OSXVERSION="darwin_15"; UNIVERSAL_ARCHS="x86_64" ;;
+  10.12* ) OSXVERSION="darwin_16"; UNIVERSAL_ARCHS="x86_64" ;;
+  10.13* ) OSXVERSION="darwin_17"; UNIVERSAL_ARCHS="x86_64" ;;
+  10.14* ) OSXVERSION="darwin_18"; UNIVERSAL_ARCHS="x86_64" ;;
+  10.15* ) OSXVERSION="darwin_19"; UNIVERSAL_ARCHS="x86_64" ;;
+  10.16* ) OSXVERSION="darwin_20"; UNIVERSAL_ARCHS="x86_64-arm64" ;;
+  11|11.* ) OSXVERSION="darwin_20"; UNIVERSAL_ARCHS="x86_64-arm64" ;;
+  12|12.* ) OSXVERSION="darwin_21"; UNIVERSAL_ARCHS="x86_64-arm64" ;;
+  13|13.* ) OSXVERSION="darwin_22"; UNIVERSAL_ARCHS="x86_64-arm64" ;;
+  14|14.* ) OSXVERSION="darwin_23"; UNIVERSAL_ARCHS="x86_64-arm64" ;;
+  15|15.* ) OSXVERSION="darwin_24"; UNIVERSAL_ARCHS="x86_64-arm64" ;;
+  26|26.* ) OSXVERSION="darwin_25"; UNIVERSAL_ARCHS="x86_64-arm64" ;;
+    * ) unsupportedDepTarget ;;
 esac
 
 require "osxcross-conf"
@@ -275,6 +302,49 @@ verifyFileIntegrity()
   set -e
 }
 
+logPkgCandidates() {
+  local context="$1"
+  shift
+  local pkgs="$@"
+  local count=$(echo "$pkgs" | wc -w)
+  local list_pkgs=""
+  if [ $count -lt 5 ]; then
+    list_pkgs=$(echo "$pkgs")
+  fi
+
+  verboseMsg "  ${context}: ${count} packages left.. ${list_pkgs}"
+}
+
+supportsRequestedArches() {
+  local candidate_arch="$1"
+  local requested_arches="$2"
+  local requested=()
+  local candidate_list=()
+
+  # Architecture independent packages always work.
+  if [ "$candidate_arch" == "noarch" ]; then
+    return 0
+  fi
+
+  IFS='-' read -ra requested <<< "$requested_arches"
+  IFS='-' read -ra candidate_list <<< "$candidate_arch"
+
+  for req in "${requested[@]}"; do
+    local found=1
+    for cand in "${candidate_list[@]}"; do
+      if [ "$req" == "$cand" ]; then
+        found=0
+        break
+      fi
+    done
+    if [ $found -ne 0 ]; then
+      return 1
+    fi
+  done
+
+  return 0
+}
+
 getPkgUrl()
 {
   local pkgname="$1"
@@ -292,7 +362,7 @@ getPkgUrl()
 
   pkgs=$(getFileStdout "$MIRROR/$pkgname/?C=M;O=A" | \
          grep -o -E 'href="([^"#]+)"' | \
-         cut -d'"' -f2 | grep '.tbz2$')
+         cut -d'"' -f2 | grep '.tbz2$' | uniq)
 
   local ec=$?
 
@@ -309,32 +379,79 @@ getPkgUrl()
     verboseMsg "  $p"
   done
 
-  local pkg=$(echo "$pkgs" | \
-              grep "$pkgname-$pkgversion" | grep $OSXVERSION | grep $ARCH | \
-              uniq | tail -n1)
-  if [ -z "$pkg" ]; then
-    pkg=$(echo "$pkgs" | \
-          grep "$pkgname-$pkgversion" | grep $OSXVERSION | grep "noarch" | \
-          uniq | tail -n1)
+  # Find the newest version that supports every requested architecture. We
+  # still try the API-advertised version first, then fall back to older ones.
+  local os_filtered=$(echo "$pkgs" | grep -E "\.(${OSXVERSION}|darwin_any|any_any)\.")
+  local versions=$(echo "$os_filtered" | \
+                   sed -E "s/^${pkgname}-//" | \
+                   sed -E 's/\.darwin.*//' | \
+                   sed -E 's/\+.*//' | $SORT -u -V)
+
+  local ordered_versions=()
+  if [ -n "$pkgversion" ]; then
+    ordered_versions+=("$pkgversion")
   fi
-  if [ -z "$pkg" ]; then
-    pkg=$(echo "$pkgs" | grep $OSXVERSION | grep $ARCH | uniq | tail -n1)
-  fi
-  if [ -z "$pkg" ]; then
-    pkg=$(echo "$pkgs" | grep $OSXVERSION | grep "noarch" | uniq | tail -n1)
-  fi
-  if [ -z "$pkg" ]; then
-    pkg=$(echo "$pkgs" | grep "any" | grep $ARCH | uniq | tail -n1)
-  fi
-  if [ -z "$pkg" ]; then
-    pkg=$(echo "$pkgs" | grep "any" | grep "noarch" | uniq | tail -n1)
-  fi
+  while read -r v; do
+    if [ "$v" != "$pkgversion" ]; then
+      ordered_versions+=("$v")
+    fi
+  done < <(echo "$versions" | $SORT -rV)
+
+  for version in "${ordered_versions[@]}"; do
+    [ -z "$version" ] && continue
+
+    local step1=$(echo "$pkgs" | grep "$pkgname-$version")
+    logPkgCandidates "step1" $step1
+
+    local step2=$(echo "$step1" | grep -E "\.(${OSXVERSION}|darwin_any|any_any)\.")
+    logPkgCandidates "step2" $step2
+
+    local best_pkg=""
+    local best_score=-1
+    local step3=""
+
+    for candidate in $step2; do
+      # Extract the arch suffix regardless of darwin/any prefix.
+      local arch=$(echo "$candidate" | sed -n 's/.*\.\([^.]*\)\.tbz2/\1/p')
+
+      if [ -z "$arch" ]; then
+        continue
+      fi
+
+      if ! supportsRequestedArches "$arch" "$ARCH"; then
+        continue
+      fi
+
+      step3+="$candidate "
+
+      # Prefer an exact arch match, then fat/universal that include all arches,
+      # and finally noarch.
+      local score=1
+      if [ "$arch" == "$ARCH" ]; then
+        score=3
+      elif [ "$arch" != "noarch" ]; then
+        score=2
+      fi
+
+      if [ $score -gt $best_score ]; then
+        best_score=$score
+        best_pkg=$candidate
+      fi
+    done
+
+    logPkgCandidates "step3" $step3
+
+    if [ -n "$best_pkg" ]; then
+      pkg=$best_pkg
+      break
+    fi
+  done
 
   verboseMsg " selected: $pkg"
 
   if [ -z "$pkg" ]; then
     verboseMsg -n "  "
-    errorMsg "no suitable version found for $OSXVERSION"
+    errorMsg "no suitable version found for $OSXVERSION on $ARCH"
     return
   fi
 
@@ -406,7 +523,7 @@ installPkg()
   echo "installing $pkgname ..."
   verboseMsg " extracting $pkgfile ..."
 
-  bzip2 -dc "$CACHE/$pkgfile" | tar xf -
+  bzip2 -dc "$CACHE/$pkgfile" | "${TAR_CMD[@]}" -xf -
 
   if [ -d opt/local ]; then
     verboseMsg " fixing permissions ..."
@@ -471,7 +588,7 @@ updateSearchCache()
   getFile $MIRROR $CACHE/packages
 
   cat packages | grep -o -E 'href="([^"#]+)"' | cut -d'"' -f2 | \
-    sed 's/.\{1\}$//' | uniq | sort > INDEXCACHE
+    sed 's/.\{1\}$//' | uniq | $SORT > INDEXCACHE
 
   rm -f packages
   echo "generated index cache for $(cat INDEXCACHE | wc -l) packages"
@@ -609,10 +726,12 @@ main()
       elif [ $opt == "-l" -o $opt == "--ldflags" ]; then
         showLDFLAGS $2
         exit
+      elif [ $opt == "-x86_64" -o $opt == "--x86_64" -o $opt == "-x86-64" -o $opt == "--x86-64" ]; then
+        ARCH="x86_64"
       elif [ $opt == "-32" -o $opt == "--i386" ]; then
         ARCH="i386"
       elif [ $opt == "-universal" -o $opt == "--universal" ]; then
-        ARCH="i386-x86_64"
+        ARCH=${UNIVERSAL_ARCHS}
       elif [ $opt == "-arm64" -o $opt == "--arm64" ]; then
         ARCH="arm64"
       elif [ $opt == "-sm" -o $opt == "--select-mirror" ]; then
